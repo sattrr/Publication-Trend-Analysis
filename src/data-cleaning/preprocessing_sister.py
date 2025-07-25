@@ -34,6 +34,8 @@ def load_and_clean_data():
     
     df = pd.read_csv(DATA_PATH, encoding="utf-8")
 
+    df.columns = df.columns.str.lower()
+
     required_columns = ["nip", "nama_sdm", "judul", "jenis_publikasi", "nama_jurnal", "tautan", "doi", "tahun", "sumber data"]
     df = df[[col for col in required_columns if col in df.columns]]
 

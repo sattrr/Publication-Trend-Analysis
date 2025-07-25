@@ -51,47 +51,63 @@ def load_and_clean_data():
 
     df = pd.read_csv(DATA_PATH, encoding="utf-8")
 
+    df.columns = df.columns.str.lower()
+
     required_columns = [
-        "Author full names", "Author(s) ID", "Title", "Source title", 
-        "Conference name", "Link", "DOI", "Year", "Sumber data"
+        "author full names", "author(s) id", "title", "source title", 
+        "conference name", "link", "doi", "year", "sumber data"
     ]
     df = df[[col for col in required_columns if col in df.columns]]
 
-    for col in ["Title", "Source title", "Conference name"]:
+    for col in ["title", "source title", "conference name"]:
         df[col] = clean_string_column(df[col])
 
-    df["Author full names"] = df["Author full names"].apply(split_and_clean_authors)
-    df["Author(s) ID"] = df["Author(s) ID"].apply(split_and_clean_ids)
+    df["author full names"] = df["author full names"].apply(split_and_clean_authors)
+    df["author(s) id"] = df["author(s) id"].apply(split_and_clean_ids)
 
-    max_len = df[["Author full names", "Author(s) ID"]].applymap(len).max(axis=1)
-    df["Author full names"] = [a if isinstance(a, list) else [] for a in df["Author full names"]]
-    df["Author(s) ID"] = [i if isinstance(i, list) else [] for i in df["Author(s) ID"]]
+    max_len = df[["author full names", "author(s) id"]].applymap(len).max(axis=1)
+    df["author full names"] = [a if isinstance(a, list) else [] for a in df["author full names"]]
+    df["author(s) id"] = [i if isinstance(i, list) else [] for i in df["author(s) id"]]
 
     def pad_or_truncate(lst, length):
         return lst + [pd.NA] * (length - len(lst))
 
-    df["Author full names"] = [pad_or_truncate(a, l) for a, l in zip(df["Author full names"], max_len)]
-    df["Author(s) ID"] = [pad_or_truncate(i, l) for i, l in zip(df["Author(s) ID"], max_len)]
+    df["author full names"] = [pad_or_truncate(a, l) for a, l in zip(df["author full names"], max_len)]
+    df["author(s) id"] = [pad_or_truncate(i, l) for i, l in zip(df["author(s) id"], max_len)]
 
-    df = df.explode(["Author full names", "Author(s) ID"], ignore_index=True)
+    df = df.explode(["author full names", "author(s) id"], ignore_index=True)
 
     df.rename(columns={
-        "Author full names": "author_name",
-        "Author(s) ID": "author_id"
+        "author full names": "author_name",
+        "author(s) id": "author_id",
+        "title": "judul",
+        "source title": "jenis_publikasi",
+        "conference name": "nama_jurnal",
+        "link": "tautan",
+        "doi": "doi",
+        "year": "tahun",
+        "sumber data": "sumber_data"
     }, inplace=True)
 
-    df = df.drop_duplicates(subset=["Title", "author_name"], keep="first")
+    df = df.drop_duplicates(subset=["judul", "author_name"], keep="first")
 
     df_map = pd.read_csv(MAPPING_PATH, dtype={"nip": str, "id_scopus": str})
     df["author_name"] = df["author_name"].astype(str)
 
-    df["matched_name"] = df["author_name"].apply(
+    df = df.merge(df_map[["nip", "id_scopus", "nama"]], how="left", left_on="author_id", right_on="id_scopus")
+
+    missing_nip = df["nip"].isna()
+
+    df.loc[missing_nip, "matched_name"] = df.loc[missing_nip, "author_name"].apply(
         lambda x: fuzzy_match_name(x, df_map["nama"].astype(str).tolist())
     )
 
-    df = df.merge(df_map[["nama", "nip"]], how="left", left_on="matched_name", right_on="nama")
+    df_fuzzy = df_map[["nama", "nip"]].rename(columns={"nama": "matched_name"})
+    df = df.merge(df_fuzzy, how="left", on="matched_name", suffixes=("", "_fuzzy"))
 
-    df = df.drop(columns=["matched_name", "nama"])
+    df["nip"] = df["nip"].combine_first(df["nip_fuzzy"])
+
+    df.drop(columns=["matched_name", "nip_fuzzy", "nama", "id_scopus"], inplace=True)
 
     return df
 
