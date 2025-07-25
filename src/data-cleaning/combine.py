@@ -6,6 +6,7 @@ CLEANED_DATA_DIR = BASE_DIR / "data" / "cleaned"
 SCOPUS_PATH = CLEANED_DATA_DIR / "scopus_cleaned.csv"
 SISTER_PATH = CLEANED_DATA_DIR / "sister_cleaned.csv"
 OUTPUT_PATH = CLEANED_DATA_DIR / "combined_publication.csv"
+EXCEL_OUTPUT_PATH = CLEANED_DATA_DIR / "combined_publication.xlsx"
 
 def load_and_prepare():
     df_scopus = pd.read_csv(SCOPUS_PATH, dtype={"nip": str, "author_id": str})
@@ -51,4 +52,5 @@ if __name__ == "__main__":
     df_sister, df_scopus = load_and_prepare()
     df_combined = combine_all(df_sister, df_scopus)
     df_combined.to_csv(OUTPUT_PATH, index=False, na_rep="")
-    print(f"Combined publication file saved to: {OUTPUT_PATH}")
+    df_combined.to_excel(EXCEL_OUTPUT_PATH, index=False)
+    print(f"Combined publication file saved to: {OUTPUT_PATH}, {EXCEL_OUTPUT_PATH}")
