@@ -1,21 +1,21 @@
 import os
 import re
-import numpy as np
 import pandas as pd
 from pathlib import Path
 from rapidfuzz import process
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 RAW_DATA_DIR = BASE_DIR / "data" / "raw"
-DATA_PATH = RAW_DATA_DIR / "scopus.csv"
+DATA_PATH = RAW_DATA_DIR / "scopus.xlsx"
 CLEANED_DATA_DIR = BASE_DIR / "data" / "cleaned"
 CLEANED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-MAPPING_PATH = CLEANED_DATA_DIR / "idscopus.csv"
+MAPPING_PATH = CLEANED_DATA_DIR / "nip_scopus_id.xlsx"
 
 def split_and_clean_authors(authors_str):
     if pd.isna(authors_str):
         return []
+    authors_str = str(authors_str)
 
     cleaned_authors = []
     for author in authors_str.split(";"):
@@ -34,6 +34,7 @@ def split_and_clean_authors(authors_str):
 def split_and_clean_ids(ids_str):
     if pd.isna(ids_str):
         return []
+    ids_str = str(ids_str)
     return [aid.strip() for aid in ids_str.split(";") if aid.strip()]
 
 def clean_string_column(col):
@@ -49,7 +50,7 @@ def load_and_clean_data():
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"File '{DATA_PATH}' not found.")
 
-    df = pd.read_csv(DATA_PATH, encoding="utf-8")
+    df = pd.read_excel(DATA_PATH)
 
     df.columns = df.columns.str.lower()
 
@@ -91,23 +92,23 @@ def load_and_clean_data():
 
     df = df.drop_duplicates(subset=["judul", "author_name"], keep="first")
 
-    df_map = pd.read_csv(MAPPING_PATH, dtype={"nip": str, "id_scopus": str})
+    df_map = pd.read_excel(MAPPING_PATH, dtype={"nip": str, "id_scopus": str})
     df["author_name"] = df["author_name"].astype(str)
 
-    df = df.merge(df_map[["nip", "id_scopus", "nama"]], how="left", left_on="author_id", right_on="id_scopus")
+    df = df.merge(df_map[["nip", "id_scopus", "nm"]], how="left", left_on="author_id", right_on="id_scopus")
 
     missing_nip = df["nip"].isna()
 
     df.loc[missing_nip, "matched_name"] = df.loc[missing_nip, "author_name"].apply(
-        lambda x: fuzzy_match_name(x, df_map["nama"].astype(str).tolist())
+        lambda x: fuzzy_match_name(x, df_map["nm"].astype(str).tolist())
     )
 
-    df_fuzzy = df_map[["nama", "nip"]].rename(columns={"nama": "matched_name"})
+    df_fuzzy = df_map[["nm", "nip"]].rename(columns={"nm": "matched_name"})
     df = df.merge(df_fuzzy, how="left", on="matched_name", suffixes=("", "_fuzzy"))
 
     df["nip"] = df["nip"].combine_first(df["nip_fuzzy"])
 
-    df.drop(columns=["matched_name", "nip_fuzzy", "nama", "id_scopus"], inplace=True)
+    df.drop(columns=["matched_name", "nip_fuzzy", "nm", "id_scopus"], inplace=True)
 
     return df
 
@@ -115,16 +116,11 @@ if __name__ == "__main__":
     try:
         df_cleaned = load_and_clean_data()
 
-        df_cleaned["nip"] = df_cleaned["nip"].apply(
-            lambda x: np.format_float_positional(float(x), trim='-') if pd.notnull(x) and x != "" else ""
-        )
-        df_cleaned["author_id"] = df_cleaned["author_id"].apply(
-            lambda x: np.format_float_positional(float(x), trim='-') if pd.notnull(x) and x != "" else ""
-        )
+        df_cleaned["nip"] = df_cleaned["nip"].apply(lambda x: str(x) if pd.notna(x) else pd.NA)
+        df_cleaned["author_id"] = df_cleaned["author_id"].apply(lambda x: str(x) if pd.notna(x) else pd.NA)
 
-        output_path = CLEANED_DATA_DIR / "scopus_cleaned.csv"
-
-        df_cleaned.to_csv(output_path, index=False, na_rep="", float_format="%.0f")
+        output_path = CLEANED_DATA_DIR / "scopus_cleaned.xlsx"
+        df_cleaned.to_excel(output_path, index=False)
         print(f"Cleaned data saved to: {output_path}")
     except Exception as e:
         print(f"Error: {e}")
