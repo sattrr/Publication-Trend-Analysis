@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 RAW_DATA_DIR = BASE_DIR / "data" / "raw"
 CLEANED_DATA_DIR = BASE_DIR / "data" / "cleaned"
 DATA_PATH = RAW_DATA_DIR / "sister.xlsx"
-MAPPING_PATH = CLEANED_DATA_DIR / "nip_scopus_id.xlsx"
+MAPPING_PATH = CLEANED_DATA_DIR / "nip_scopus_id_cleaned.xlsx"
 OUTPUT_PATH = CLEANED_DATA_DIR / "sister_cleaned.xlsx"
 
 CLEANED_DATA_DIR.mkdir(parents=True, exist_ok=True)
