@@ -18,9 +18,9 @@ APP_DIR = BASE_DIR / "app"
 MLFLOW_DIR = BASE_DIR / "mlruns"
 OUTPUT_DIR = DATA_DIR / "output"
 
-INPUT_PATH = DATA_DIR / "titles_cleaned.csv"
-TOPIC_ASSIGNMENT_PATH = OUTPUT_DIR / "topic_assignments.csv"
-TOPIC_TREND_PATH = OUTPUT_DIR / "topic_trends.csv"
+INPUT_PATH = DATA_DIR / "titles_cleaned.xlsx"
+TOPIC_ASSIGNMENT_PATH = OUTPUT_DIR / "topic_assignments.xlsx"
+TOPIC_TREND_PATH = OUTPUT_DIR / "topic_trends.xlsx"
 
 for path in [MODEL_DIR, LOGS_DIR, APP_DIR, MLFLOW_DIR, OUTPUT_DIR]:
     path.mkdir(parents=True, exist_ok=True)
@@ -64,7 +64,7 @@ def compute_topic_diversity(topic_model, top_k=10):
 
 
 log.info("Loading cleaned data...")
-df = pd.read_csv(INPUT_PATH).dropna(subset=["judul", "tahun"])
+df = pd.read_excel(INPUT_PATH).dropna(subset=["judul", "tahun"])
 
 df["tahun"] = df["tahun"].astype(str).str.extract(r"(\d{4})")
 df = df.dropna(subset=["tahun"])
@@ -95,7 +95,7 @@ with mlflow.start_run(run_name="bertopic_training"):
     df["probability"] = probs
     df["topic_name"] = df["topic"].map(topic_names)
 
-    df[["judul", "tahun", "topic", "probability", "topic_name"]].to_csv(TOPIC_ASSIGNMENT_PATH, index=False)
+    df[["judul", "tahun", "topic", "probability", "topic_name"]].to_excel(TOPIC_ASSIGNMENT_PATH, index=False)
     mlflow.log_artifact(str(TOPIC_ASSIGNMENT_PATH))
 
     df = df[df["topic"] != -1]
@@ -124,7 +124,7 @@ with mlflow.start_run(run_name="bertopic_training"):
 
     trends_df = topics_over_time[["Topic", "Words", "Timestamp", "Frequency"]]
     trends_df.columns = ["topic", "topic_words", "tahun", "count"]
-    trends_df.to_csv(TOPIC_TREND_PATH, index=False)
+    trends_df.to_excel(TOPIC_TREND_PATH, index=False)
     mlflow.log_artifact(str(TOPIC_TREND_PATH))
 
     mlflow.log_metric("num_topics", len(topic_info))
