@@ -4,8 +4,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CLEANED_DATA_DIR = BASE_DIR / "data" / "cleaned"
 COMBINED_PATH = CLEANED_DATA_DIR / "combined_publication.xlsx"
-OUTPUT_NIP_KOSONG = CLEANED_DATA_DIR / "publication_nip_kosong.xlsx"
-OUTPUT_NIP_ADA = CLEANED_DATA_DIR / "publication_nip.xlsx"
+OUTPUT_NIP_KOSONG = CLEANED_DATA_DIR / "empty_nip.xlsx"
+OUTPUT_NIP_ADA = CLEANED_DATA_DIR / "final_publication.xlsx"
 
 def sort_nip_data():
     if not COMBINED_PATH.exists():
