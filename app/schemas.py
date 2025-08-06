@@ -11,6 +11,7 @@ class PublikasiBase(BaseModel):
     tahun: Optional[str]
     tautan: Optional[str]
     doi: Optional[str]
+    sumber_data: Optional[str]
 
     class Config:
         orm_mode = True

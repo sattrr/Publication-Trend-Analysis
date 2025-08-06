@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parents[2]
 COLLECTION_DIR = BASE_DIR / "src" / "data-cleaning"
 UPLOAD_URL = os.getenv("UPLOAD_ENDPOINT", "http://localhost:8000/upload/")
-FINAL_EXCEL_PATH = BASE_DIR / "src" / "data-collection" / "final_publication.xlsx"
+FINAL_EXCEL_PATH = BASE_DIR / "data" / "cleaned" / "final_publication.xlsx"
 
 def upload_to_fastapi():
     if FINAL_EXCEL_PATH.exists():

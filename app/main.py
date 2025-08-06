@@ -24,7 +24,23 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
     df = pd.read_excel(file.file)
     cleaned_df = clean_and_match_data(df)
 
+    print(f"Starting insert {len(cleaned_df)} data into DB...")
+
+    publikasi_list = []
     for _, row in cleaned_df.iterrows():
-        crud.insert_publikasi(db, row.to_dict())
-    db.commit()
-    return {"message": f"{len(cleaned_df)} records inserted"}
+        try:
+            publikasi = models.Publikasi(**row.to_dict())
+            publikasi_list.append(publikasi)
+        except Exception as e:
+            print(f"Error parsing row: {e}")
+    
+    try:
+        db.bulk_save_objects(publikasi_list, return_defaults=False)
+        db.commit()
+        print("Successful data insert into DB.")
+    except Exception as e:
+        db.rollback()
+        print(f"DB Error: {e}")
+        return {"error": str(e)}
+
+    return {"message": f"{len(publikasi_list)} records inserted"}

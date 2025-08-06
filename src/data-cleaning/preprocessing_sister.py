@@ -29,6 +29,14 @@ def fuzzy_match_name(name, candidate_list, threshold=85):
 def clean_id_scopus(value):
     return re.sub(r"[^0-9]", "", str(value)) if pd.notna(value) else pd.NA
 
+def clean_id(val):
+    if pd.isna(val):
+        return pd.NA
+    val = str(val)
+    if val.endswith(".0"):
+        val = val[:-2]
+    return val
+
 def extract_year_from_date_column(df, date_col="tanggal"):
     if date_col in df.columns:
         df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
@@ -87,6 +95,9 @@ def load_and_clean_data():
     df["id_scopus"] = df.apply(resolve_id_scopus, axis=1)
     df["id_scopus"] = df["id_scopus"].apply(clean_id_scopus)
     df = df.drop(columns=["nm"])
+
+    df["tahun"] = df["tahun"].astype(str)
+    df["id_scopus"] = df["id_scopus"].apply(clean_id)
 
     return df
 

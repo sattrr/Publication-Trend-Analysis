@@ -112,6 +112,7 @@ def load_and_clean_data():
     id_scopus_to_nip = df_map.dropna(subset=["id_scopus", "nip"]).set_index("id_scopus")["nip"].to_dict()
     df["author_id"] = df["author_id"].astype(str).replace(["nan", "none", ""], pd.NA)
     df["nip"] = df["author_id"].map(id_scopus_to_nip)
+    df["tahun"] = df["tahun"].astype(str)
 
     df["author_name_norm"] = df["author_name"].apply(normalize_name)
     candidate_map = list(df_map[["nm_norm", "nip"]].dropna().itertuples(index=False, name=None))
@@ -122,6 +123,7 @@ def load_and_clean_data():
     )
 
     df.drop(columns=["author_name_norm"], inplace=True, errors="ignore")
+
     return df
 
 if __name__ == "__main__":

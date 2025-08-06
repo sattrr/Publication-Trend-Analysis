@@ -19,6 +19,25 @@ def normalize_name(name):
         name = tokens[0]
     return name
 
+def extract_scopus_id(value):
+    if pd.isna(value):
+        return pd.NA
+
+    value = str(value).strip().lower()
+
+    match = re.search(r"authorid=(\d{5,20})", value)
+    if match:
+        return match.group(1)
+
+    match = re.search(r"author\s*id[:\s]*([0-9]{5,20})", value)
+    if match:
+        return match.group(1)
+
+    if re.fullmatch(r"\d{5,20}", value):
+        return value
+
+    return pd.NA
+
 def preprocess_nip_scopus_id():
     df = pd.read_excel(INPUT_PATH, dtype={"nip": str, "id_scopus": str})
 
@@ -26,9 +45,8 @@ def preprocess_nip_scopus_id():
         raise ValueError("Kolom 'nip', 'id_scopus', dan 'nm' harus ada di file input")
 
     df["nip"] = df["nip"].apply(lambda x: str(x).strip() if pd.notna(x) else pd.NA)
-    df["id_scopus"] = df["id_scopus"].apply(lambda x: str(x).strip() if pd.notna(x) else pd.NA)
+    df["id_scopus"] = df["id_scopus"].apply(lambda x: extract_scopus_id(x))
     df["nm"] = df["nm"].apply(lambda x: str(x).strip() if pd.notna(x) else pd.NA)
-
     df["nm"] = df["nm"].apply(normalize_name)
 
     df = df.drop_duplicates(subset=["nip", "id_scopus", "nm"], keep="first")

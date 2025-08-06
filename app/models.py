@@ -17,3 +17,4 @@ class Publikasi(Base):
     tahun = Column(String(10))
     tautan = Column(String)
     doi = Column(String)
+    sumber_data = Column(String, nullable=True)
