@@ -117,10 +117,10 @@ with mlflow.start_run(run_name="bertopic_training"):
         nr_bins=30
     )
 
-    log.info("Saving topic trends visualization...")
-    fig = topic_model.visualize_topics_over_time(topics_over_time)
-    fig.write_html(str(OUTPUT_DIR / "topics_over_time.html"))
-    mlflow.log_artifact(str(OUTPUT_DIR / "topics_over_time.html"))
+    # log.info("Saving topic trends visualization...")
+    # fig = topic_model.visualize_topics_over_time(topics_over_time)
+    # fig.write_html(str(OUTPUT_DIR / "topics_over_time.html"))
+    # mlflow.log_artifact(str(OUTPUT_DIR / "topics_over_time.html"))
 
     trends_df = topics_over_time[["Topic", "Words", "Timestamp", "Frequency"]]
     trends_df.columns = ["topic", "topic_words", "tahun", "count"]
