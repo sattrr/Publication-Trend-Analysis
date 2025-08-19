@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/Satriock/Documents/Code/AI/Publication Trend Analysis/mlruns/389473181498154463/0d7c1efbb8cd49e294c8107d52012a98/artifacts
+end_time: 1755571216200
+entry_point_name: ''
+experiment_id: '389473181498154463'
+lifecycle_stage: active
+run_id: 0d7c1efbb8cd49e294c8107d52012a98
+run_name: bertopic_training_with_domains
+run_uuid: 0d7c1efbb8cd49e294c8107d52012a98
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1755570901581
+status: 3
+tags: []
+user_id: Satriock
