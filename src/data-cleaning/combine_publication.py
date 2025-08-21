@@ -43,7 +43,7 @@ def load_and_prepare():
 
     return df_sister, df_scopus
 
-def combine_fuzzy(df_sister, df_scopus, threshold=90):
+def combine_fuzzy(df_sister, df_scopus, threshold=90, name_threshold=85):
     combined = []
     matched_sister_idx = set()
 
@@ -61,20 +61,23 @@ def combine_fuzzy(df_sister, df_scopus, threshold=90):
             nip_s = row_s["nip"]
             nip_t = row_t["nip"]
 
-            if pd.notna(nip_s) and pd.notna(nip_t):
-                if nip_s != nip_t:
-                    combined.append(row_s.to_dict())
-                    continue
-            elif pd.isna(nip_s) and pd.isna(nip_t):
+            name_score = fuzz.token_sort_ratio(str(row_s["nama"]), str(row_t["nama"]))
+
+            if name_score < name_threshold:
+                combined.append(row_s.to_dict())
+                continue
+
+            if pd.notna(nip_s) and pd.notna(nip_t) and nip_s != nip_t:
                 combined.append(row_s.to_dict())
                 continue
 
             matched_sister_idx.add(match_idx)
+
             combined_row = row_s.copy()
             combined_row["sumber_data"] = "SISTER, SCOPUS"
 
             if pd.isna(combined_row["nip"]) or combined_row["nip"].strip().lower() in ["", "nan"]:
-                combined_row["nip"] = nip_s if pd.notna(nip_s) else nip_t
+                combined_row["nip"] = nip_t if pd.notna(nip_t) else nip_s
 
             combined.append(combined_row.to_dict())
         else:

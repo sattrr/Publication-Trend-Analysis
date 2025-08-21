@@ -23,6 +23,8 @@ def clean_string_column(col):
     return col.apply(lambda x: str(x).strip().lower() if pd.notna(x) else pd.NA)
 
 def fuzzy_match_name(name, candidate_list, threshold=85):
+    if not name or pd.isna(name):
+        return None
     match, score, _ = process.extractOne(name, candidate_list)
     return match if score >= threshold else None
 
@@ -52,6 +54,22 @@ def move_column(df, column_name, after_column):
         return df[cols]
     return df
 
+def overwrite_nama(df, df_map):
+    nip_to_name = {}
+
+    for _, row in df_map.dropna(subset=["nip", "nm"]).iterrows():
+        nip_to_name[row["nip"]] = str(row["nm"]).strip().lower()
+
+    for nip, group in df.groupby("nip"):
+        if pd.isna(nip) or nip in nip_to_name:
+            continue
+        name_counts = group["nama_sdm"].value_counts()
+        best_name = max(name_counts.index, key=lambda x: (len(str(x)), name_counts[x]))
+        nip_to_name[nip] = str(best_name).strip().lower()
+
+    df["nama_sdm"] = df["nip"].map(nip_to_name).fillna(df["nama_sdm"].str.lower())
+    return df
+
 def load_and_clean_data():
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"File '{DATA_PATH}' not found.")
@@ -61,7 +79,10 @@ def load_and_clean_data():
     df = pd.read_excel(DATA_PATH)
     df.columns = df.columns.str.lower()
 
-    required_columns = ["nip", "nama_sdm", "judul", "jenis_publikasi", "nama_jurnal", "tautan", "doi", "tanggal", "sumber data"]
+    required_columns = [
+        "nip", "nama_sdm", "judul", "jenis_publikasi", "nama_jurnal",
+        "tautan", "doi", "tanggal", "sumber data"
+    ]
     df = df[[col for col in required_columns if col in df.columns]]
 
     df["judul"] = clean_string_column(df["judul"])
@@ -94,10 +115,13 @@ def load_and_clean_data():
 
     df["id_scopus"] = df.apply(resolve_id_scopus, axis=1)
     df["id_scopus"] = df["id_scopus"].apply(clean_id_scopus)
+
     df = df.drop(columns=["nm"])
 
     df["tahun"] = df["tahun"].astype(str)
     df["id_scopus"] = df["id_scopus"].apply(clean_id)
+
+    df = overwrite_nama(df, df_map)
 
     return df
 

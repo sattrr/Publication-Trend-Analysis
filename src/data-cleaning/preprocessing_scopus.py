@@ -20,8 +20,8 @@ def normalize_name(name):
     tokens = name.split()
     if len(tokens) == 2 and tokens[0] == tokens[1]:
         name = tokens[0]
-
     return name
+
 
 def split_and_clean_authors(authors_str):
     if pd.isna(authors_str):
@@ -39,14 +39,17 @@ def split_and_clean_authors(authors_str):
             cleaned_authors.append(author)
     return cleaned_authors
 
+
 def split_and_clean_ids(ids_str):
     if pd.isna(ids_str):
         return []
     ids_str = str(ids_str)
     return [aid.strip() for aid in ids_str.split(";") if aid.strip()]
 
+
 def clean_string_column(col):
     return col.apply(lambda x: str(x).strip().lower() if pd.notna(x) else pd.NA)
+
 
 def fuzzy_match_name(name, candidate_map):
     name_norm = normalize_name(name)
@@ -60,12 +63,30 @@ def fuzzy_match_name(name, candidate_map):
             best_score = score
     return best_match if best_score >= 80 else pd.NA
 
+
 def pad_or_truncate(lst, length):
     if not isinstance(lst, list):
         lst = []
     if len(lst) < length:
         return lst + [pd.NA] * (length - len(lst))
     return lst[:length]
+
+def overwrite_author_name(df, df_map):
+    """Timpa kolom author_name dengan nama standar (lowercase)."""
+    nip_to_name = {}
+
+    for _, row in df_map.dropna(subset=["nip", "nm"]).iterrows():
+        nip_to_name[row["nip"]] = str(row["nm"]).strip().lower()
+
+    for nip, group in df.groupby("nip"):
+        if pd.isna(nip) or nip in nip_to_name:
+            continue
+        name_counts = group["author_name"].value_counts()
+        best_name = max(name_counts.index, key=lambda x: (len(str(x)), name_counts[x]))
+        nip_to_name[nip] = str(best_name).strip().lower()
+
+    df["author_name"] = df["nip"].map(nip_to_name).fillna(df["author_name"].str.lower())
+    return df
 
 def load_and_clean_data():
     if not DATA_PATH.exists():
@@ -75,7 +96,7 @@ def load_and_clean_data():
     df.columns = df.columns.str.lower()
 
     required_columns = [
-        "author full names", "author(s) id", "title", "source title", 
+        "author full names", "author(s) id", "title", "source title",
         "conference name", "link", "doi", "year", "sumber data"
     ]
     df = df[[col for col in required_columns if col in df.columns]]
@@ -110,6 +131,7 @@ def load_and_clean_data():
     df_map["nm_norm"] = df_map["nm"].astype(str).apply(normalize_name)
 
     id_scopus_to_nip = df_map.dropna(subset=["id_scopus", "nip"]).set_index("id_scopus")["nip"].to_dict()
+
     df["author_id"] = df["author_id"].astype(str).replace(["nan", "none", ""], pd.NA)
     df["nip"] = df["author_id"].map(id_scopus_to_nip)
     df["tahun"] = df["tahun"].astype(str)
@@ -122,7 +144,15 @@ def load_and_clean_data():
         lambda name: fuzzy_match_name(name, candidate_map)
     )
 
+    known_nip_map = df.loc[df["nip"].notna(), ["author_name_norm", "nip"]].drop_duplicates().values.tolist()
+    still_missing_mask = df["nip"].isna()
+    df.loc[still_missing_mask, "nip"] = df.loc[still_missing_mask, "author_name_norm"].apply(
+        lambda name: fuzzy_match_name(name, known_nip_map)
+    )
+
     df.drop(columns=["author_name_norm"], inplace=True, errors="ignore")
+
+    df = overwrite_author_name(df, df_map)
 
     return df
 
