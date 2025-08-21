@@ -56,21 +56,25 @@ def combine_fuzzy(df_sister, df_scopus, threshold=90):
         if match and match[1] >= threshold:
             matched_title = match[0]
             match_idx = sister_title_to_index[matched_title]
+            row_t = df_sister.loc[match_idx]
 
-            if match_idx in matched_sister_idx:
+            nip_s = row_s["nip"]
+            nip_t = row_t["nip"]
+
+            if pd.notna(nip_s) and pd.notna(nip_t):
+                if nip_s != nip_t:
+                    combined.append(row_s.to_dict())
+                    continue
+            elif pd.isna(nip_s) and pd.isna(nip_t):
                 combined.append(row_s.to_dict())
                 continue
 
-            row_t = df_sister.loc[match_idx]
             matched_sister_idx.add(match_idx)
-
             combined_row = row_s.copy()
             combined_row["sumber_data"] = "SISTER, SCOPUS"
 
             if pd.isna(combined_row["nip"]) or combined_row["nip"].strip().lower() in ["", "nan"]:
-                combined_row["nip"] = row_t["nip"]
-
-            combined_row["judul"] = row_s["judul"]
+                combined_row["nip"] = nip_s if pd.notna(nip_s) else nip_t
 
             combined.append(combined_row.to_dict())
         else:
